@@ -2,8 +2,8 @@ import pandas as pd
 import glob
 import os
 import yaml
-import shutil
-import time
+import git
+from pathlib import Path
 
 from matchms.importing import load_from_mgf
 from matchms.filtering import add_precursor_mz
@@ -17,7 +17,6 @@ from molecular_networking import generate_mn
 from ms1_matcher import ms1_matcher
 from reweighting_functions import taxonomical_reponderator, chemical_reponderator
 from helpers import top_N_slicer, annotation_table_formatter_taxo, annotation_table_formatter_no_taxo
-
 from plotter import plotter_count, plotter_intensity
 from formatters import feature_intensity_table_formatter
 
@@ -25,11 +24,8 @@ pd.options.mode.chained_assignment = None
 
 os.chdir(os.getcwd())
 
-# for debug ony should be commented later
-from pathlib import Path
 p = Path(__file__).parents[1]
 os.chdir(p)
-
 
 # you can copy the configs/default/default.yaml to configs/user/user.yaml
 
@@ -39,12 +35,12 @@ with open (r'configs/user/user.yaml') as file:
 recompute = params_list['general_params']['recompute']
 ionization_mode = params_list['general_params']['ionization_mode']
 
-repository_path = params_list['paths']['repository_path']
+repository_path = os.path.normpath(params_list['paths']['repository_path'])
 taxo_db_metadata_path = params_list['paths']['taxo_db_metadata_path']
-spectral_db_pos_path = params_list['paths']['spectral_db_pos_path']
-spectral_db_neg_path = params_list['paths']['spectral_db_neg_path']
-adducts_pos_path = params_list['paths']['adducts_pos_path']
-adducts_neg_path = params_list['paths']['adducts_neg_path']
+spectral_db_pos_path = os.path.normpath(params_list['paths']['spectral_db_pos_path'])
+spectral_db_neg_path = os.path.normpath(params_list['paths']['spectral_db_neg_path'])
+adducts_pos_path = os.path.normpath(params_list['paths']['adducts_pos_path'])
+adducts_neg_path = os.path.normpath(params_list['paths']['adducts_neg_path'])
 
 parent_mz_tol = params_list['spectral_match_params']['parent_mz_tol']
 msms_mz_tol = params_list['spectral_match_params']['msms_mz_tol']
@@ -66,13 +62,16 @@ msms_weight = params_list['reweighting_params']['msms_weight']
 taxo_weight = params_list['reweighting_params']['taxo_weight']
 chemo_weight = params_list['reweighting_params']['chemo_weight']
 
+params_list.update({'version_info':[{'git_commit':git.Repo(search_parent_directories=True).head.object.hexsha},
+                                    {'git_commit_link':f'https://github.com/enpkg/enpkg_mn_isdb_taxo/tree/{git.Repo(search_parent_directories=True).head.object.hexsha}'}]})
+
+
 ###### START #####
 
 # Iteration over samples directory to count samples with required input files
 
 samples_dir = [directory for directory in os.listdir(repository_path)]
-print(f'{len(samples_dir)} samples folder were detected in the input directory. They will be checked for minimal requirements.')
-
+print(f'{len(samples_dir)} directories were detected in the input directory. They will be checked for minimal requirements.')
 
 for sample_dir in samples_dir[:]:
     # if sample_dir != ".DS_Store":
@@ -95,7 +94,7 @@ for sample_dir in samples_dir[:]:
         continue
 
     # Check if MS/MS spectra are present 
-    if len(glob.glob(repository_path + sample_dir + '/' + ionization_mode + '/*'+ '_features_ms2_' + ionization_mode + '.mgf')) != 0 :
+    if os.path.isfile(os.path.join(repository_path,sample_dir, ionization_mode, sample_dir + '_features_ms2_' + ionization_mode + '.mgf')):
         pass
     else:
         print(sample_dir + " has no MSMS data, it is removed from the processing list.")
@@ -103,14 +102,14 @@ for sample_dir in samples_dir[:]:
         continue
 
     # Check if features intensity table is present
-    if len(glob.glob(repository_path + sample_dir + '/' + ionization_mode + '/*'+ '_features_quant_' + ionization_mode + '.csv')) != 0 :
+    if os.path.isfile(os.path.join(repository_path,sample_dir, ionization_mode, sample_dir + '_features_quant_' + ionization_mode + '.csv')):
         pass
     else:
         print(sample_dir + " has no feature intensity table, it is removed from the processing list.")
         samples_dir.remove(sample_dir)
         continue
     if recompute == False :
-        if len(glob.glob(repository_path + sample_dir + '/' + ionization_mode + '/isdb/config.yaml')) != 0:
+        if os.path.isfile(os.path.join(repository_path, sample_dir, ionization_mode, 'isdb/config.yaml')):
             print(sample_dir + " has already been annotated through the ISDB, since the recompute option (user.yaml) is set to False it will be removed from the processing list.")
             samples_dir.remove(sample_dir)
     # else:
@@ -119,7 +118,6 @@ for sample_dir in samples_dir[:]:
 print(f'{len(samples_dir)} samples folder were found to be complete and will be processed.')
 
 if input("Do you wish to continue and process samples? (y/n)") != ("y"):
-
     exit()
     
 # Load spectral DB
@@ -155,8 +153,8 @@ for sample_dir in samples_dir:
     
     metadata_file_path = os.path.join(repository_path, sample_dir, sample_dir + '_metadata.tsv')
     metadata = pd.read_csv(metadata_file_path, sep='\t')   
-    spectra_file_path = glob.glob(repository_path + sample_dir + '/' + ionization_mode + '/*'+ '_features_ms2_' + ionization_mode + '.mgf')[0]        
-    feature_table_path = glob.glob(repository_path + sample_dir + '/' + ionization_mode + '/*'+ '_features_quant_' + ionization_mode + '.csv')[0]
+    spectra_file_path = os.path.join(repository_path,sample_dir, ionization_mode, sample_dir + '_features_ms2_' + ionization_mode + '.mgf')       
+    feature_table_path = os.path.join(repository_path,sample_dir, ionization_mode, sample_dir + '_features_quant_' + ionization_mode + '.csv')
     feature_table = pd.read_csv(feature_table_path, sep=',')
         
     try:
@@ -171,17 +169,17 @@ for sample_dir in samples_dir:
     Treating file: ''' + sample_dir
     )
 
-    isdb_results_path = f'{repository_path}{sample_dir}/{ionization_mode}/isdb/{sample_dir}_isdb_{ionization_mode}.tsv'
-    mn_ci_ouput_path = f'{repository_path}{sample_dir}/{ionization_mode}/molecular_network/{sample_dir}_mn_metadata_{ionization_mode}.tsv'
-    repond_table_path = f'{repository_path}{sample_dir}/{ionization_mode}/isdb/{sample_dir}_isdb_reweighted_{ionization_mode}.tsv'
-    repond_table_flat_path = f'{repository_path}{sample_dir}/{ionization_mode}/isdb/{sample_dir}_isdb_reweighted_flat_{ionization_mode}.tsv'
-    mn_graphml_ouput_path = f'{repository_path}{sample_dir}/{ionization_mode}/molecular_network/{sample_dir}_mn_{ionization_mode}.graphml'
-    treemap_chemo_counted_results_path = f'{repository_path}{sample_dir}/{ionization_mode}/isdb/{sample_dir}_treemap_chemo_counted_{ionization_mode}.html'
-    treemap_chemo_intensity_results_path = f'{repository_path}{sample_dir}/{ionization_mode}/isdb/{sample_dir}_treemap_chemo_intensity_{ionization_mode}.html'
-    isdb_config_path = f'{repository_path}{sample_dir}/{ionization_mode}/isdb/config.yaml'
-    mn_config_path = f'{repository_path}{sample_dir}/{ionization_mode}/molecular_network/config.yaml'
-    isdb_folder_path = f'{repository_path}{sample_dir}/{ionization_mode}/isdb/'
-    mn_folder_path = f'{repository_path}{sample_dir}/{ionization_mode}/molecular_network/'
+    isdb_results_path = os.path.normpath(f'{repository_path}/{sample_dir}/{ionization_mode}/isdb/{sample_dir}_isdb_{ionization_mode}.tsv')
+    mn_ci_ouput_path = os.path.normpath(f'{repository_path}/{sample_dir}/{ionization_mode}/molecular_network/{sample_dir}_mn_metadata_{ionization_mode}.tsv')
+    repond_table_path = os.path.normpath(f'{repository_path}/{sample_dir}/{ionization_mode}/isdb/{sample_dir}_isdb_reweighted_{ionization_mode}.tsv')
+    repond_table_flat_path = os.path.normpath(f'{repository_path}/{sample_dir}/{ionization_mode}/isdb/{sample_dir}_isdb_reweighted_flat_{ionization_mode}.tsv')
+    mn_graphml_ouput_path = os.path.normpath(f'{repository_path}/{sample_dir}/{ionization_mode}/molecular_network/{sample_dir}_mn_{ionization_mode}.graphml')
+    treemap_chemo_counted_results_path = os.path.normpath(f'{repository_path}/{sample_dir}/{ionization_mode}/isdb/{sample_dir}_treemap_chemo_counted_{ionization_mode}.html')
+    treemap_chemo_intensity_results_path = os.path.normpath(f'{repository_path}/{sample_dir}/{ionization_mode}/isdb/{sample_dir}_treemap_chemo_intensity_{ionization_mode}.html')
+    isdb_config_path = os.path.normpath(f'{repository_path}/{sample_dir}/{ionization_mode}/isdb/config.yaml')
+    mn_config_path = os.path.normpath(f'{repository_path}/{sample_dir}/{ionization_mode}/molecular_network/config.yaml')
+    isdb_folder_path = os.path.normpath(f'{repository_path}/{sample_dir}/{ionization_mode}/isdb/')
+    mn_folder_path = os.path.normpath(f'{repository_path}/{sample_dir}/{ionization_mode}/molecular_network/')
     
     # Import query spectra
     spectra_query = list(load_from_mgf(spectra_file_path))
@@ -194,7 +192,8 @@ for sample_dir in samples_dir:
     ''')
     
     generate_mn(spectra_query, mn_graphml_ouput_path, mn_ci_ouput_path, mn_msms_mz_tol, mn_score_cutoff, mn_top_n, mn_max_links)
-    shutil.copyfile(r'configs/user/user.yaml', mn_config_path)
+    with open(mn_config_path, "w") as f:
+        yaml.dump(params_list, f)
     
     print('''
     Molecular Networking done
@@ -218,7 +217,8 @@ for sample_dir in samples_dir:
         dt_isdb_results = pd.read_csv(isdb_results_path, sep='\t', \
             usecols=['msms_score', 'feature_id', 'reference_id', 'short_inchikey'], on_bad_lines='skip', low_memory=True)
     except ValueError:   
-        shutil.copyfile(r'configs/user/user.yaml', isdb_config_path)
+        with open(isdb_config_path, "w") as f:
+            yaml.dump(params_list, f)
         continue
     # Add 'libname' column and rename msms_score column
     dt_isdb_results['libname'] = 'ISDB'
@@ -346,14 +346,15 @@ for sample_dir in samples_dir:
         if taxo_metadata is not None:
             organism_label = taxo_metadata['query_otol_species'][0]
         else:
-            organism_label = metadata['organism_species'][0]
+            organism_label = metadata['source_taxon'][0]
             
         plotter_count(df_flat, sample_dir, organism_label, treemap_chemo_counted_results_path)
         plotter_intensity(df_flat, feature_intensity_table_formatted, sample_dir, organism_label, treemap_chemo_intensity_results_path)
 
 
         # Save params 
-        shutil.copyfile(r'configs/user/user.yaml', isdb_config_path)
+        with open(isdb_config_path, "w") as f:
+            yaml.dump(params_list, f)
         del(dt_isdb_results_chem_rew)
         del(dt_isdb_results, taxo_reweight)
         
