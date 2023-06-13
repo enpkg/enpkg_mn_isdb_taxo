@@ -158,7 +158,11 @@ for sample_dir in samples_dir:
     feature_table = pd.read_csv(feature_table_path, sep=',')
         
     try:
-        taxo_metadata_path = glob.glob(repository_path + sample_dir + '/taxo_output' + '/*'+ '_taxo_metadata.tsv')[0]
+        for file in os.listdir(os.path.join(repository_path, sample_dir, 'taxo_output')):
+            if file.endswith("_taxo_metadata.tsv"):
+                taxo_metadata_path = os.path.join(repository_path, sample_dir, 'taxo_output', file)
+            else:
+                pass
         taxo_metadata = pd.read_csv(taxo_metadata_path, sep='\t')       
     except FileNotFoundError:
         taxo_metadata = None
