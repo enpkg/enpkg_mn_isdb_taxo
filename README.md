@@ -1,6 +1,7 @@
 # enpkg_mn_isdb_taxo
 
 ![release_badge](https://img.shields.io/github/v/release/enpkg/enpkg_mn_isdb_taxo)
+![license](https://img.shields.io/github/license/enpkg/enpkg_mn_isdb_taxo)
 
 Repository gathering scripts to perform MS/MS annotation using ISDB, MS1 annotation, Molecular Networking and annotations reweighting on a set of individual files.  
 
