@@ -5,7 +5,9 @@
 
 Repository gathering scripts to perform MS/MS annotation using ISDB, MS1 annotation, Molecular Networking and annotations reweighting on a set of individual files.  
 
-⚙️ Workflow part of [enpkg_workflow](https://github.com/enpkg/enpkg_workflow). First data have to be organized using [data_organization](https://github.com/enpkg/enpkg_data_organization) and taxonomy resolved using [taxo_enhancer](https://github.com/enpkg/enpkg_taxo_enhancer).  
+⚙️ Module part of [enpkg_workflow](https://github.com/enpkg/enpkg_workflow).    
+
+First data have to be organized using [data_organization](https://github.com/enpkg/enpkg_data_organization) and taxonomy resolved using [taxo_enhancer](https://github.com/enpkg/enpkg_taxo_enhancer).  
 
 ## Required starting architecture
 
