@@ -121,3 +121,12 @@ data/
 |
 └─── sample_n/
 ```
+##  Citations
+If you use this ENPKG module, please cite:  
+[Allard et al. 2016, Analytical Chemistry](https://pubs.acs.org/doi/10.1021/acs.analchem.5b04804)  
+[Rutz et al. 2016, Frontiers in Plant Science](https://www.frontiersin.org/articles/10.3389/fpls.2019.01329/full)  
+[Rutz et al. 2022, Elife](https://elifesciences.org/articles/70780)  
+[Huber et al. 2020, Journal of Open Source Software](https://joss.theoj.org/papers/10.21105/joss.02411)  
+
+
+
