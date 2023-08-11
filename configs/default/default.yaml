@@ -5,11 +5,11 @@ general_params:
 
 paths:
   repository_path: 'Path\to\your\data\' # Path where samples are located
-  taxo_db_metadata_path: db_metadata/220525_frozen_metadata.csv.gz  # Path to your spectral library file
+  taxo_db_metadata_path: db_metadata/230106_frozen_metadata.csv.gz  # Path to your spectral library file
   spectral_db_pos_path: db_spectra/isdb_pos.mgf # Path to the metadata of the spectral file in PI mode
   spectral_db_neg_path: db_spectra/isdb_neg.mgf # Path to the metadata of the spectral file in NI mode
-  adducts_pos_path: data_loc/220525_frozen_metadata/220525_frozen_metadata_adducts_pos.tsv.gz # Path to the adducts file in pos mode
-  adducts_neg_path: data_loc/220525_frozen_metadata/220525_frozen_metadata_adducts_neg.tsv.gz # Path to the adducts file in neg mode
+  adducts_pos_path: data_loc/230106_frozen_metadata/230106_frozen_metadata_adducts_pos.tsv.gz # Path to the adducts file in pos mode
+  adducts_neg_path: data_loc/230106_frozen_metadata/230106_frozen_metadata_adducts_neg.tsv.gz # Path to the adducts file in neg mode
 
 spectral_match_params:
   parent_mz_tol: 0.01 # the parent mass tolerance to use for spectral matching (in Da) (if cosine)

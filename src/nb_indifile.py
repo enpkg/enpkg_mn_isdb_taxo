@@ -5,7 +5,7 @@ import git
 import pandas as pd
 import yaml
 from matchms.filtering import add_precursor_mz
-from matchms.filtering.require_minimum_number_of_peaks import (
+from matchms.filtering.peak_processing.require_minimum_number_of_peaks import (
     require_minimum_number_of_peaks,
 )
 from matchms.importing import load_from_mgf
@@ -283,6 +283,7 @@ for sample_dir in samples_dir:
 
     # Import query spectra
     spectra_query = list(load_from_mgf(spectra_file_path))
+    print(spectra_query)
     spectra_query = [
         require_minimum_number_of_peaks(s, n_required=1) for s in spectra_query
     ]
